@@ -35,7 +35,7 @@ def create_model(batch_norm=True):
 
     # Conv block 1: zero padding, 3x3 conv layer with 32 filters,
     # leaky ReLU activation and, optionally, batch_normalization,
-    model.add(ZeroPadding2D(padding=(1, 1), input_shape=(1, 43, 128),
+    model.add(ZeroPadding2D(padding=(1, 1), input_shape=(1,128,43),
         data_format="channels_first"))
     model.add(Conv2D(32, kernel_size=3, padding='same', use_bias=use_bias,
         data_format='channels_first'))
@@ -132,7 +132,7 @@ def create_model(batch_norm=True):
 
     model.summary()
 
-    model.compile(optimizer='adam', loss='categorical_crossentropy',
+    model.compile(optimizer='adam', loss='binary_crossentropy',
             metrics=['accuracy'])
 
     return model
@@ -154,12 +154,36 @@ def train_model(model,  X_train, X_test, y_train, y_test):
 
 if __name__ == "__main__":
     #X_train, X_test, y_train, y_test = loadData()
-    X_train = np.zeros((1,1,43,128))
-    y_train = np.zeros((1,11))
-    y_train[0,0] = 1
-    X_test = np.zeros((1,1,43,128))
-    y_test = np.zeros((1,11))
-    y_test[0,0] = 1
+
+
+    data = np.load("datasets.npz")
+
+
+    X_train = data["X_train"] #np.zeros((1,1,43,128))
+    y_train = data["y_train"] #np.zeros((1,11))
+    #y_train[0,0] = 1
+
+    X_train = np.reshape(X_train, (X_train.shape[0],1, X_train.shape[1],X_train.shape[2]))
+
+
+    X_test = data["X_test"]
+    y_test = data["y_test"]
+
+
+    X_test = np.reshape(X_test, (X_test.shape[0],1,X_test.shape[1], X_test.shape[2]))
+
+
+    X_val = data["X_val"]
+    y_val = data["y_val"]
+   
+
+    X_val = np.reshape(X_val, (X_val.shape[0],1,X_val.shape[1], X_val.shape[2]))
+
+    #X_test = np.zeros((1,1,43,128))
+    #y_test = np.zeros((1,11))
+    #y_test[0,0] = 1
     model = create_model()
-    train_model(model, X_train, X_test, y_train, y_test)
+    train_model(model, X_train, X_val, y_train, y_val)
+
+
 
