@@ -16,7 +16,9 @@ import librosa
 import os
 import sys
 
-folders = ['IRMAS-TestingData-Part3/Part3/']
+testing_folders = ['IRMAS-TestingData-Part1/Part1/', 'IRMAS-TestingData-Part2/Part2/',
+            'IRMAS-TestingData-Part3/Part3/']
+training_folder = 'IRMAS-TrainingData/'
 
 label_map = {"cel" : 0, "cla" : 1, "flu" : 2, "gac" : 3, "gel" : 4, "org" : 5,
         "pia" : 6, "sax" : 7, "tru" : 8, "vio" : 9, "voi" : 10}
@@ -29,6 +31,8 @@ def progress_bar(count, total, suffix=''):
         total  (int): total number of steps
         suffix (str): to suffix the progress bar
     """
+    bar_len = 60
+    
     filled_len = int(round(60 * count / float(total)))
     percents = round(100.0 * count / float(total), 1)
     bar = '=' * filled_len + '-' * (bar_len - filled_len)
@@ -77,12 +81,12 @@ def extract_from_file(filename, seconds=1):
     features = {}
 
     features["filename"] = filename[:-4]
-    features["audio"]    = audio
-    features["stft"]     = stft
+    #features["audio"]    = audio
+    #features["stft"]     = stft
     features["mspec"]    = mspecs
     features["labels"]   = np.zeros([11])
 
-    with open(ffilename[:-4] + '.txt', 'r') as fp:
+    with open(filename[:-4] + '.txt', 'r') as fp:
         lines = fp.readlines()
         for l in lines:
             features["labels"][label_map[l[:3]]] = 1
@@ -90,8 +94,8 @@ def extract_from_file(filename, seconds=1):
     return features
 
 
-def main():
-    for folder in folders:
+def main_testing():
+    for folder in testing_folders:
         print("Entering folder ", folder)
 
         features = []
@@ -109,6 +113,28 @@ def main():
         np.save("%s_features" % folder[:23], features)
 
 
+def main_training():
+    features = []
+    for instrument in label_map.keys() :
+        print("Entering folder ", training_folder + instrument)
+
+        for root, dirs, files in os.walk(training_folder + instrument):
+            
+            total_files = len(files)
+
+            count = 0
+            for file in files:
+                if file.endswith('.wav'):
+                    count += 1
+                    progress_bar(count, total_files, suffix='')
+                    feat = extract_from_file(training_folder+instrument+ "/" + file, label_map[instrument] )
+                    features.append(feat)
+                    #print(file)
+                    
+    np.save(training_folder + "../" + "IRMAS-TrainingData_features", features)
+
+
 if __name__ == "__main__":
-    main()
+    main_training()
+    main_testing()
 
