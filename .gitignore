@@ -1,4 +1,7 @@
 __pycache__/
 
 IRMA*/
-
+IRMA*
+*.npy
+*.npz
+data.py
