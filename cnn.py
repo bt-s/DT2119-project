@@ -15,7 +15,14 @@ import numpy as np
 from keras.models import Sequential
 from keras.layers import BatchNormalization, Dense, Conv2D, \
         MaxPooling2D, GlobalMaxPooling2D, Dropout, LeakyReLU, ZeroPadding2D
-from data import loadData
+
+from keras.callbacks import TensorBoard, ModelCheckpoint
+
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
+
+import tensorflow as tf
+tf.logging.set_verbosity(tf.logging.ERROR)
 
 
 def create_model(batch_norm=True):
@@ -148,42 +155,56 @@ def train_model(model,  X_train, X_test, y_train, y_test):
         y_train (np.ndarray): input training label
         y_test  (np.ndarray): input test label
     """
-    model.fit(x=X_train, y=y_train, batch_size=128, epochs=8,
-            validation_data=(X_test, y_test))
+    # add callbacks 
+    
+    tensorboard = TensorBoard(log_dir='./logs', histogram_freq=0,
+                                      write_graph=True, write_images=False)
+
+    checkpoint = ModelCheckpoint('models/model-{epoch:03d}-{acc:03f}-{val_acc:03f}.h5', 
+            verbose=1, monitor='val_loss',save_best_only=True, mode='auto') 
+    callbacks = [tensorboard, checkpoint]
+    
+    model.fit(x=X_train, y=y_train, batch_size=128, epochs=20,
+            validation_data=(X_test, y_test), callbacks=callbacks)
+
+    return model
+
+
+def test_model(model, X_test, y_test):
+    prediction = model.predict(X_test)
+
+    print(prediction.shape, y_test.shape)
+    prediction = prediction - 0.5
+
+    prediction[prediction > 0] = 1
+    prediction[prediction <= 0] = 0
+
+    print(np.sum(prediction == y_test)/y_test.shape[0])
+    print(y_test.shape)
 
 
 if __name__ == "__main__":
-    #X_train, X_test, y_train, y_test = loadData()
-
-
     data = np.load("datasets.npz")
 
-
-    X_train = data["X_train"] #np.zeros((1,1,43,128))
-    y_train = data["y_train"] #np.zeros((1,11))
-    #y_train[0,0] = 1
-
-    X_train = np.reshape(X_train, (X_train.shape[0],1, X_train.shape[1],X_train.shape[2]))
+    X_train = data["X_train"] 
+    X_train = np.reshape(X_train, (X_train.shape[0], 1, X_train.shape[1],
+        X_train.shape[2]))
+    y_train = data["y_train"]
 
 
     X_test = data["X_test"]
+    X_test = np.reshape(X_test, (X_test.shape[0], 1, X_test.shape[1],
+        X_test.shape[2]))
     y_test = data["y_test"]
 
-
-    X_test = np.reshape(X_test, (X_test.shape[0],1,X_test.shape[1], X_test.shape[2]))
-
-
     X_val = data["X_val"]
+    X_val = np.reshape(X_val, (X_val.shape[0], 1, X_val.shape[1],
+        X_val.shape[2]))
     y_val = data["y_val"]
-   
 
-    X_val = np.reshape(X_val, (X_val.shape[0],1,X_val.shape[1], X_val.shape[2]))
+    model = create_model(batch_norm=False)
+    model = train_model(model, X_train, X_val, y_train, y_val)
 
-    #X_test = np.zeros((1,1,43,128))
-    #y_test = np.zeros((1,11))
-    #y_test[0,0] = 1
-    model = create_model()
-    train_model(model, X_train, X_val, y_train, y_val)
-
+    test_model(model, X_test, y_test)
 
 
