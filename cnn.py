@@ -145,18 +145,19 @@ def create_model(batch_norm=True):
     return model
 
 
-def train_model(model,  X_train, X_test, y_train, y_test):
+def train_model(model,  X_train, X_val, y_train, y_val):
     """Trains the CNN model
 
     Args:
         model   (Sequential): CNN model
         X_train (np.ndarray): input training data
-        X_test  (np.ndarray): input test data
+        X_val   (np.ndarray): input val data
         y_train (np.ndarray): input training label
-        y_test  (np.ndarray): input test label
+        y_val   (np.ndarray): input val label
+
+    Returns:
+        model (Sequential): trained CNN model
     """
-    # add callbacks 
-    
     tensorboard = TensorBoard(log_dir='./logs', histogram_freq=0,
                                       write_graph=True, write_images=False)
 
@@ -165,12 +166,19 @@ def train_model(model,  X_train, X_test, y_train, y_test):
     callbacks = [tensorboard, checkpoint]
     
     model.fit(x=X_train, y=y_train, batch_size=128, epochs=20,
-            validation_data=(X_test, y_test), callbacks=callbacks)
+            validation_data=(X_val, y_val), callbacks=callbacks)
 
     return model
 
 
 def test_model(model, X_test, y_test):
+    """Tests the CNN model
+
+    Args:
+        model   (Sequential): CNN model
+        X_test (np.ndarray): input testing data
+        y_test (np.ndarray): input testing label
+    """
     prediction = model.predict(X_test)
 
     print(prediction.shape, y_test.shape)
@@ -186,25 +194,16 @@ def test_model(model, X_test, y_test):
 if __name__ == "__main__":
     data = np.load("datasets.npz")
 
-    X_train = data["X_train"] 
+    X_train = np.load("datasets/X_train.npy") 
     X_train = np.reshape(X_train, (X_train.shape[0], 1, X_train.shape[1],
         X_train.shape[2]))
-    y_train = data["y_train"]
+    y_train = np.load("datasets/y_train.npy")
 
-
-    X_test = data["X_test"]
-    X_test = np.reshape(X_test, (X_test.shape[0], 1, X_test.shape[1],
-        X_test.shape[2]))
-    y_test = data["y_test"]
-
-    X_val = data["X_val"]
+    X_val = np.load("datasets/X_val.npy")
     X_val = np.reshape(X_val, (X_val.shape[0], 1, X_val.shape[1],
         X_val.shape[2]))
-    y_val = data["y_val"]
+    y_val = np.load("datasets/y_val.npy")
 
-    model = create_model(batch_norm=False)
+    model = create_model(batch_norm=True)
     model = train_model(model, X_train, X_val, y_train, y_val)
-
-    test_model(model, X_test, y_test)
-
 
