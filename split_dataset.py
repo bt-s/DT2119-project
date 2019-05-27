@@ -39,11 +39,32 @@ if __name__ == "__main__":
     # Fill the training data matrices
     j = 0
     for ix, _ in enumerate(train_data):
+        assert len(train_data[ix]['mspec']) == 3
         label = train_data[ix]["labels"]
         for feat in train_data[ix]['mspec']:
             X_train[j,:,:] = feat
             y_train[j,:] = label
             j+=1
+
+    # Sanity check
+    print("X_train.shape old: ", X_train.shape)
+    print("y_train.shape old: ", y_train.shape)
+
+    # Shuffle data 
+    X_train = np.asarray(np.split(X_train, np.arange(3, X_train.shape[0]-1, 3)))
+    y_train = np.asarray(np.split(y_train, np.arange(3, y_train.shape[0]-1, 3)))
+
+    # Sanity check
+    for y in y_train:
+        assert y.shape[0] == 3
+
+    permutations = np.random.permutation(X_train.shape[0])
+    X_train = np.vstack(X_train[permutations])
+    y_train = np.vstack(y_train[permutations])
+
+    # Sanity check
+    print("X_train.shape new: ", X_train.shape)
+    print("y_train.shape new: ", y_train.shape)
 
     # Randomly split training data in a 85% training set and a 15% validation set
     X_train, X_val, y_train, y_val = train_test_split(X_train, y_train,
