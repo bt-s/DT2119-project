@@ -7,6 +7,9 @@ preprocessed_data/*
 *.npy
 *.npz
 data.py
+clean.sh
+datasets/*
+results/*
 
 ### Vim ###
 # Swap

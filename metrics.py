@@ -1,9 +1,10 @@
 #!/usr/bin/python3
 
-"""metrics.py: Script used for computing and visualizing performance metrics 
+"""metrics.py: Script used for computing and visualizing performance metrics
 
-Usage from CLI: $ python3 metrics.py *-bn
-Where '-bn' specifies to select a model that was trained using batch normalization.
+Usage from CLI: $ python3 metrics.py <int> *-bn 
+Where <int> is an integer to specify the max pooling window and '-bn' specifies
+to select a model that was trained using batch normalization.
 
 Part of a project for the 2019 DT2119 Speech and Speaker Recognition course at
 KTH Royal Institute of Technology"""
@@ -20,10 +21,12 @@ from collections import OrderedDict
 
 import sys
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 import tensorflow as tf
 tf.logging.set_verbosity(tf.logging.ERROR)
+ 
+import pickle
 
 
 def f1_score(p, r):
@@ -51,7 +54,7 @@ def compute_metric(labels, predictions, mtype="micro"):
                                   or 'macro'
 
     Returns:
-        p  (float): the precision 
+        p  (float): the precision
         r  (float): the recall
         f1 (float): the F1 score
     """
@@ -88,7 +91,7 @@ def compute_metric_per_instrument(labels, predictions):
             "gel" : 0.0, "org" : 0.0, "pia" : 0.0, "sax" : 0.0,
             "tru" : 0.0, "vio" : 0.0, "voi" : 0.0})
 
-    ps, rs, f1s = instruments.copy(), instruments.copy(), instruments.copy() 
+    ps, rs, f1s = instruments.copy(), instruments.copy(), instruments.copy()
     for label, pred, inst in zip(labels.T, predictions.T, instruments):
         p = precision_score(label, pred)
         r = recall_score(label, pred)
@@ -100,28 +103,60 @@ def compute_metric_per_instrument(labels, predictions):
 
 
 def main(argv):
-    batch_norm = False 
-    if len(argv) > 1 and argv[1] == "-bn":
+    batch_norm = False
+    max_pooling_window = int(argv[1])
+    if len(argv) > 2 and argv[2] == "-bn":
         batch_norm = True
+    else:
+        raise Exception("The third input argument has to be '-bn'.")
 
-    data = np.load("datasets.npz")
+    print("Max pooling window: ", max_pooling_window)
+    print("Batch normlization: ", batch_norm)
 
-    X_test = data["X_test"]
-    X_test = np.reshape(X_test, (X_test.shape[0],1,X_test.shape[1], 
-        X_test.shape[2]))
-    y_test = data["y_test"]
+    f = open("datasets/X_test.pkl", "rb")
+    X_test = pickle.load(f)
+
+    f = open("datasets/y_test.pkl", "rb")
+    y_test = pickle.load(f)
+
+    f.close()
 
     if batch_norm: model = load_model("results/with_batch_norm/model.h5")
     else: model = load_model("results/without_batch_norm/model.h5")
 
-    prediction = model.predict(X_test)
-    prediction = prediction - 0.5 
-    prediction[prediction > 0] = 1                                                  
-    prediction[prediction <= 0] = 0
+    predictions = np.zeros((len(X_test), 11))
 
-    micro_p, micro_r, micro_f1 = compute_metric(y_test, prediction)
-    macro_p, macro_r, macro_f1 = compute_metric(y_test, prediction, mtype='macro')
-    inst_p, inst_r, inst_f1 = compute_metric_per_instrument(y_test, prediction)
+    for (key,val) in X_test.items():
+        val = np.reshape(val, (val.shape[0], 1, val.shape[1],
+            val.shape[2]))
+
+        prediction = model.predict(val)
+
+        ### Class-wise max pooling:
+        if max_pooling_window:
+            max_pooled_pred = np.zeros_like(predictions)
+            N = len(predictions)
+            for i in range(N):
+                max_pooled_pred[i] = np.max(predictions[max(0, i - max_pooling_window // 2) : 
+                    min(N, i + max_pooling_window // 2), :], axis = 0)
+            predictions = max_pooled_pred
+
+        m = np.max(prediction, axis = 0)
+        prediction = np.mean(prediction, axis = 0)
+        prediction = prediction - 0.15
+        prediction[prediction > 0] = 1
+        prediction[prediction <= 0] = 0
+        predictions[key] = prediction
+
+    a = np.array(list(y_test.values()))
+
+    y_test = np.zeros((len(a), 11))
+    for i in range(len(a)):
+        y_test[i] = a[i][0]
+
+    micro_p, micro_r, micro_f1 = compute_metric(y_test, predictions)
+    macro_p, macro_r, macro_f1 = compute_metric(y_test, predictions, mtype='macro')
+    inst_p, inst_r, inst_f1 = compute_metric_per_instrument(y_test, predictions)
 
     print(micro_p, micro_r, micro_f1)
     print()
@@ -131,4 +166,4 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv)
-    
+

@@ -23,6 +23,7 @@ training_folder = 'IRMAS-TrainingData/'
 label_map = {"cel" : 0, "cla" : 1, "flu" : 2, "gac" : 3, "gel" : 4, "org" : 5,
         "pia" : 6, "sax" : 7, "tru" : 8, "vio" : 9, "voi" : 10}
 
+
 def progress_bar(count, total, suffix=''):
     """Prints a progress bar
 
@@ -81,8 +82,6 @@ def extract_from_file(filename, seconds=1):
     features = {}
 
     features["filename"] = filename[:-4]
-    #features["audio"]    = audio
-    #features["stft"]     = stft
     features["mspec"]    = mspecs
     features["labels"]   = np.zeros([11])
 
@@ -95,6 +94,7 @@ def extract_from_file(filename, seconds=1):
 
 
 def main_testing():
+    """Extracts the mel-spectogram from all testing files"""
     for folder in testing_folders:
         print("Entering folder ", folder)
 
@@ -114,6 +114,7 @@ def main_testing():
 
 
 def main_training():
+    """Extracts the mel-spectogram from all training files"""
     features = []
     for instrument in label_map.keys() :
         print("Entering folder ", training_folder + instrument)
