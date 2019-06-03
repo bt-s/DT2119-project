@@ -43,6 +43,7 @@ def main(argv):
     ################ Computing the predictions for every theta ################
     predictions = []
     bar = IncrementalBar('Processing', max=9)
+
     for theta in thetas:
         predictions_theta = np.zeros((len(X_test), 11))
         for (key,val) in X_test.items():
@@ -77,9 +78,9 @@ def main(argv):
     
     ######################### Saving the predictions ##########################
     if batch_norm:
-         pickle.dump(predictions, open("predictions_copy/with" + str(max_pooling_window), "wb"))
+         pickle.dump(predictions, open("predictions/with" + str(max_pooling_window), "wb"))
     else:
-         pickle.dump(predictions, open("predictions_copy/without" + str(max_pooling_window), "wb"))
+         pickle.dump(predictions, open("predictions/without" + str(max_pooling_window), "wb"))
     ###########################################################################
 
 if __name__ == "__main__":

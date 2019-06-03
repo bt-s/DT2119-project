@@ -12,6 +12,7 @@ datasets/*
 results/*
 logs/*
 models/*
+predictions/*
 
 ### Vim ###
 # Swap

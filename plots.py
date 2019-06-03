@@ -6,13 +6,15 @@ import plotly
 import plotly.plotly as py
 import plotly.graph_objs as go
 
-method = 2
+method = 1
+
 if method == 1:
     thetas = [0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18]
 elif method == 2:
     thetas = [0.20, 0.25, 0.30, 0.35, 0.40, 0.45,0.50, 0.55, 0.60]
 else:
     print("Wrong argument for method")
+
 names = ["without0", "without4", "without6", "with0", "with4", "with6"]
 
 ################################ Ground Truth #################################
@@ -136,7 +138,7 @@ for i, name in enumerate(names):
     ######################### Per instrument results ##########################
     inst_p, inst_r, inst_f1 = compute_metric_per_instrument(y_test, predictions_every_theta[argmax_best_theta])
 
-    x = list(inst_p.keys())
+    x = list(inst_p.keys()) 
     per_inst = [
             go.Histogram(
                 histfunc = "sum",
@@ -177,6 +179,6 @@ for i, name in enumerate(names):
 
     legend = False
 
-py.iplot(fig_per_inst, filename = "per_inst_s2.html")
-py.iplot(fig_micro, filename = "micro_s2.html")
-py.iplot(fig_macro, filename = "macro_s2.html")
+py.iplot(fig_per_inst, filename = "per_inst.html")
+py.iplot(fig_micro, filename = "micro.html")
+py.iplot(fig_macro, filename = "macro.html")
