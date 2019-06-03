@@ -87,9 +87,9 @@ def compute_metric_per_instrument(labels, predictions):
         rs  (dict): the recall per instrument
         f1s (dict): the F1 scores per instrument
     """
-    instruments = OrderedDict({"cel" : 0.0, "cla" : 0.0, "flu" : 0.0, "gac" : 0.0,
-            "gel" : 0.0, "org" : 0.0, "pia" : 0.0, "sax" : 0.0,
-            "tru" : 0.0, "vio" : 0.0, "voi" : 0.0})
+    instruments = OrderedDict([("cel", 0.0), ("cla", 0.0), ("flu", 0.0), ("gac", 0.0),
+        ("gel", 0.0), ("org", 0.0), ("pia", 0.0), ("sax", 0.0), ("tru", 0.0), 
+        ("vio", 0.0), ("voi", 0.0)])
 
     ps, rs, f1s = instruments.copy(), instruments.copy(), instruments.copy()
     for label, pred, inst in zip(labels.T, predictions.T, instruments):
