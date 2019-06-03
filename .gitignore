@@ -10,6 +10,8 @@ data.py
 clean.sh
 datasets/*
 results/*
+logs/*
+models/*
 
 ### Vim ###
 # Swap
