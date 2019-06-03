@@ -7,13 +7,15 @@ import plotly.plotly as py
 import plotly.graph_objs as go
 
 method = 1
+
 if method == 1:
     thetas = [0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18]
 elif method == 2:
     thetas = [0.20, 0.25, 0.30, 0.35, 0.40, 0.45,0.50, 0.55, 0.60]
 else:
     print("Wrong argument for method")
-names = ["without0"]#, "without4", "without6", "with0", "with4", "with6"]
+
+names = ["without0", "without4", "without6", "with0", "with4", "with6"]
 
 ################################ Ground Truth #################################
 f = open("datasets/y_test.pkl", "rb")

@@ -1,6 +1,8 @@
 import sys
 import pickle
 import numpy as np
+import progress
+from progress.bar import IncrementalBar
 from keras.models import load_model
 
 import os
@@ -22,7 +24,7 @@ def main(argv):
     print("batch norm :", batch_norm)
     
     if method == 1:
-        thetas = [0.16]# [0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18]
+        thetas = [0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18]
     elif method == 2:
         thetas = [0.20, 0.25, 0.30, 0.35, 0.40, 0.45,0.50, 0.55, 0.60]
     else:
@@ -40,6 +42,8 @@ def main(argv):
 
     ################ Computing the predictions for every theta ################
     predictions = []
+    bar = IncrementalBar('Processing', max=9)
+
     for theta in thetas:
         predictions_theta = np.zeros((len(X_test), 11))
         for (key,val) in X_test.items():
@@ -49,11 +53,11 @@ def main(argv):
     
             ### Class-wise max pooling:
             if max_pooling_window:
-                max_pooled_pred = np.zeros_like(predictions_theta)
-                N = len(predictions_theta)
+                max_pooled_pred = np.zeros_like(prediction)
+                N = len(prediction)
                 for i in range(N):
-                        max_pooled_pred[i] = np.max(predictions_theta[max(0,i-max_pooling_window//2):min(N,i + max_pooling_window//2), :], axis = 0)
-                predictions = max_pooled_pred
+                        max_pooled_pred[i] = np.max(prediction[max(0,i-max_pooling_window//2):min(N,i + max_pooling_window//2), :], axis = 0)
+                prediction = max_pooled_pred
             
             ### Aggregating the results from the same excerpt
             if method == 1:
@@ -66,7 +70,9 @@ def main(argv):
             prediction[prediction > 0] = 1
             prediction[prediction <= 0] = 0
             predictions_theta[key] = prediction
-    predictions.append(predictions_theta)
+        predictions.append(predictions_theta)
+        bar.next()
+    bar.finish()
     ###########################################################################  
     
     
