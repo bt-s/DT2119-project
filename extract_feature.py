@@ -76,7 +76,7 @@ def extract_from_file(filename, seconds=1):
     seg_dur = 43 * seconds
     spec_list = []
     for idx in range(0, ln_mel_spec.shape[1] - seg_dur + 1, seg_dur):
-        spec_list.append(ln_mel_spec[:, idx:(idx+seg_dur)])
+        spec_list.append(ln_mel_spec[:, idx : (idx + seg_dur)])
     mspecs = np.expand_dims(np.array(spec_list), axis=1)
 
     features = {}
@@ -120,7 +120,6 @@ def main_training():
         print("Entering folder ", training_folder + instrument)
 
         for root, dirs, files in os.walk(training_folder + instrument):
-            
             total_files = len(files)
 
             count = 0
@@ -128,9 +127,9 @@ def main_training():
                 if file.endswith('.wav'):
                     count += 1
                     progress_bar(count, total_files, suffix='')
-                    feat = extract_from_file(training_folder+instrument+ "/" + file, label_map[instrument] )
+                    feat = extract_from_file(training_folder+instrument+ "/" +
+                            file, label_map[instrument] )
                     features.append(feat)
-                    #print(file)
                     
     np.save(training_folder + "../" + "IRMAS-TrainingData_features", features)
 
