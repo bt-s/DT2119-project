@@ -1,75 +1,91 @@
-from keras import applications
-from keras import backend as K
+#!/usr/bin/python3
+
+"""visualize.py: Script to visualize the learned patterns in the audio data.
+
+Part of a project for the 2019 DT2119 Speech and Speaker Recognition course at
+KTH Royal Institute of Technology"""
+
+__author__ = "Pietro Alovisi, Romain Deffayet & Bas Straathof"
+
+
 import numpy as np
-import keras
+from scipy.io import wavfile
+import librosa
+import scipy
+import scipy.optimize as spopt
+from keras.models import load_model
+
+model = load_model("results/with_batch_norm/model.h5")
+
+label_map = {"cel" : 0, "cla" : 1, "flu" : 2, "gac" : 3, "gel" : 4, "org" : 5,
+        "pia" : 6, "sax" : 7, "tru" : 8, "vio" : 9, "voi" : 10}
 
 
-# load the model
-model = keras.models.load_model("../results/without_batch_norm/model.h5")
+def extract_mfcc(audio_single, seconds=1):
+    """Extracts the mel-spectogram from the input file
+    Args:
+        filename (str): the name of the input file
+        seconds  (int): lenght of audio excerpt in seconds
 
-# get the symbolic outputs of each "key" layer (we gave them unique names).
-layer_dict = dict([(layer.name, layer) for layer in model.layers])
-
-# placeholder for the input
-input_img = model.inputs[0]
-
-# equivalent to learning rate ...
-step = 0.0005
-# ... and nr. epochs
-N = 1000
-
-# last layer name
-layer_name = 'dense_2'
-
-# placeholder of the of the last layer
-layer_output = layer_dict[layer_name].output
-
-# load the inputs and the target labels
-X = np.load("one_per_instrument.npy")
-Y = np.eye(11)
-
-# output matrix where to save the results
-X_opt = np.zeros(X.shape)
-
-# for each isntrument
-for instr in range(11):
-
-    target = Y[instr,:]
-    target_placeholder = K.placeholder(shape=(None,11))
-
-    print("target is :", target)
-    print("##########################################")
+    Returns:
+        features (dict): contains the filename, the mono audio signal, the STFT,
+                         the mspec and the labels
+    """
     
-    # build the loss to minimize
-    loss = K.categorical_crossentropy(target_placeholder, layer_output)
+    # Normalize by dividing the time-domain signal with its maximum value
+    audio_single = audio_single /np.max(np.abs(audio_single))
 
-    # compute the gradient of the input wrt this loss
-    grads = K.gradients(loss, input_img)[0]
+    # Remove single dimensions
+    audio_single = np.squeeze(audio_single)
 
-    # normalization trick: we normalize the gradient
-    grads /= (K.sqrt(K.mean(K.square(grads))) + 1e-5)
+    audio = np.zeros(21*1024)
 
-    # this function returns the loss and grads given the input picture
-    iterate = K.function([input_img], [loss, grads], feed_dict={target_placeholder:target})
+    for i in range(21):
+        audio[i*1024 : (1+i)*1024] = audio_single 
+
+    # Compute Short Time Fourier Transform
+    stft = np.abs(librosa.stft(audio, win_length=1024, hop_length=512,
+        center=True))
+    
+    # Convert to Mel Spectogram
+    mel_spec = librosa.feature.melspectrogram(S=stft, sr=22050, n_mels=128)
+
+    # Take the natural logarithm of the Mel Spectogram
+    ln_mel_spec = np.log(mel_spec + np.finfo(float).eps)
+
+    # Segementation of the spectogram
+    seg_dur = 43 * seconds
+    spec_list = []
+    for idx in range(0, ln_mel_spec.shape[1] - seg_dur + 1, seg_dur):
+        spec_list.append(ln_mel_spec[:, idx : (idx + seg_dur)])
+
+    mspecs = np.expand_dims(np.array(spec_list), axis=1)
+    return mspecs
 
 
-    # we start from the given input 
-    input_img_data = X[instr,:,:]
-    input_img_data = np.reshape(input_img_data,(1,128,43,1))
+def test_on_network(x, instrument=3):
+    """Test x on the imput and return the loss function."""
+    inp = extract_mfcc(x)
+    global model 
+    inp = np.reshape(inp, (1,128,43,1))
+    pred = model.predict(inp)
 
-    # run gradient ascent for N  steps
-    for i in range(N):
-        loss_value, grads_value = iterate([input_img_data])
-       
-        pred = model.predict(input_img_data)
-        #print(-np.log(pred[0,instr]+np.finfo(float).eps))
-        print(loss_value)
-        input_img_data -= grads_value * step
+    pred = scipy.special.softmax(pred)
 
-    # save result an print the prediction
-    X_opt[instr,:,:]= input_img_data[0,:,:,0]
+    return 1 - pred[0, instrument]
 
-    print(model.predict(input_img_data))
 
-# save the results in a file
-np.save("opt_one_per_instr", X_opt)
+def main():
+    # Start from a random input
+    x = np.random.normal(size=1024)
+    
+    # Minimize the loss 
+    result = spopt.minimize(test_on_network, x)
+
+    # Save the result
+    np.save("guitar",result)
+
+
+if __name__=="__main__":
+    main()
+

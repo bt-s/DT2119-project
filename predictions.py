@@ -1,3 +1,18 @@
+#!/usr/bin/python3
+
+"""predictions.py: Script to test prediction performance for various parameter
+confiugrations.
+
+Usage from CLI: $ python3 predictions.py <int> <int> <int>
+Where the integers specify whether to use batch normalization, the max pooling
+window and the aggregation method, respectively.
+
+Part of a project for the 2019 DT2119 Speech and Speaker Recognition course at
+KTH Royal Institute of Technology"""
+
+__author__ = "Pietro Alovisi, Romain Deffayet & Bas Straathof"
+
+
 import sys
 import pickle
 import numpy as np
@@ -30,36 +45,36 @@ def main(argv):
     else:
         print("Wrong argument for method")
     
-    ################### Loading the test set and the model ####################
+    # Loading the test set and the model 
     f = open("datasets/X_test.pkl", "rb")
     X_test = pickle.load(f)
     f.close()
 
     if batch_norm: model = load_model("results/with_batch_norm/model.h5")
     else: model = load_model("results/without_batch_norm/model.h5")
-    ###########################################################################
 
-
-    ################ Computing the predictions for every theta ################
+    # Computing the predictions for every theta 
     predictions = []
     bar = IncrementalBar('Processing', max=9)
 
     for theta in thetas:
         predictions_theta = np.zeros((len(X_test), 11))
         for (key,val) in X_test.items():
-            ### Predicting on the subset
+            # Predicting on the subset
             val = np.reshape(val, (val.shape[0], val.shape[1], val.shape[2], 1))
             prediction = model.predict(val)
     
-            ### Class-wise max pooling:
+            # Class-wise max pooling:
             if max_pooling_window:
                 max_pooled_pred = np.zeros_like(prediction)
                 N = len(prediction)
                 for i in range(N):
-                        max_pooled_pred[i] = np.max(prediction[max(0,i-max_pooling_window//2):min(N,i + max_pooling_window//2), :], axis = 0)
+                        max_pooled_pred[i] = np.max(
+                                prediction[max(0,i-max_pooling_window//2):
+                                    min(N,i + max_pooling_window//2), :], axis = 0)
                 prediction = max_pooled_pred
             
-            ### Aggregating the results from the same excerpt
+            # Aggregating the results from the same excerpt
             if method == 1:
                 prediction = np.mean(prediction, axis = 0)
             if method == 2:
@@ -73,15 +88,13 @@ def main(argv):
         predictions.append(predictions_theta)
         bar.next()
     bar.finish()
-    ###########################################################################  
     
-    
-    ######################### Saving the predictions ##########################
+    # Saving the predictions 
     if batch_norm:
          pickle.dump(predictions, open("predictions/with" + str(max_pooling_window), "wb"))
     else:
          pickle.dump(predictions, open("predictions/without" + str(max_pooling_window), "wb"))
-    ###########################################################################
 
 if __name__ == "__main__":
     main(sys.argv)
+

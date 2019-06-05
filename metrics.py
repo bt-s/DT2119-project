@@ -99,3 +99,4 @@ def compute_metric_per_instrument(labels, predictions):
         f1s[inst] = f1_score(p, r)
 
     return ps, rs, f1s
+

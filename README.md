@@ -29,5 +29,4 @@ Folder for visualization of the learned audio patterns by the CNN.
 - `*.wav` Audio representation of the learned patterns per instrument.
 - `reconstruct.py` Script to reconstructd .wav fifles from Mel spectograms.
 - `visualize.py` Script for learned pattern visualization.
-- `visualize_no_backprop.py` Script for learned pattern visualization without back propagation.
 
